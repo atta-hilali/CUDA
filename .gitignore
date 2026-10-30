@@ -1,0 +1,12 @@
+3-ger/ger
+4-gemm/gemm
+tests/kernel_validation
+__pycache__/
+*.o
+*.ptx
+*.cubin
+results/*.csv
+results/*.txt
+results/*.json
+!results/build_validation.txt
+!results/host_validation.txt

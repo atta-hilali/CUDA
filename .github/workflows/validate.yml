@@ -1,0 +1,43 @@
+name: Validate CUDA assignments
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  host-checks:
+    name: CPU kernel and source checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check the submitted kernel bodies on CPU
+        run: python3 tests/host_check.py
+      - name: Validate Python scripts and notebook cells
+        run: python3 scripts/check_sources.py
+
+  cuda-build:
+    name: CUDA 12.6 compile and CLI checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    container: nvidia/cuda:12.6.3-devel-ubuntu22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install Python for argument checks
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends python3
+      - name: Compile both assignments and the GPU validation executable
+        run: make all tests/kernel_validation NVCCFLAGS='-O3 -std=c++14 -lineinfo -Xcompiler=-Wall,-Wextra'
+      - name: Check invalid arguments without a GPU
+        run: python3 scripts/run_tests.py --arguments-only
+      - name: State the validation boundary
+        run: echo 'Build and argument checks only. GPU correctness, cuBLAS results and timings require an NVIDIA GPU.'
